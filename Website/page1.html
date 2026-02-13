@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Relationship Wrapped - Stats</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* --- Stats container --- */
+        #stats {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .stat-item {
+            opacity: 0;
+            transform: translateY(30px);
+            font-size: 50px;
+            font-weight: bold;
+            color: #d3f971;
+            transition: all 0.6s ease;
+            text-align: center;
+            position: relative;
+        }
+
+        .stat-item span.count {
+            color: #fff;
+            font-size: inherit;
+            display: inline-block;
+            margin-left: 10px;
+        }
+
+        /* Crown element */
+        .crown {
+            position: absolute;
+            top: -60px;
+            left: 50%;
+            transform: translateX(-50%) scale(0);
+            font-size: 50px;
+            transition: transform 0.6s cubic-bezier(.25,.8,.25,1);
+        }
+
+        /* Confetti container */
+        .confetti {
+            position: fixed;
+            pointer-events: none;
+            width: 10px;
+            height: 10px;
+            background-color: red;
+            top: 0;
+            left: 0;
+            opacity: 0.9;
+            z-index: 9999;
+            border-radius: 50%;
+        }
+
+        /* Page fade */
+        body {
+            opacity: 0;
+            transition: opacity 2s ease;
+            background: #000;
+            font-family: -apple-system, BlinkMacSystemFont, "San Francisco", Helvetica, Arial, sans-serif;
+        }
+
+        /* Center screen content */
+        .screen {
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+            transition: transform 0.6s ease;
+        }
+
+        #stats-title {
+            font-size: 50px;
+            font-weight: bold;
+            color: #d3f971;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        #now-playing {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 6px 12px;
+    border-radius: 20px;
+    color: #fff;
+    font-weight: bold;
+    font-family: 'Montserrat', sans-serif;
+    z-index: 100; /* above everything else */
+}
+
+#cd-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    animation: spin 3s linear infinite;
+}
+
+/* Spin animation for CD */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+#song-title {
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+    </style>
+</head>
+<body>
+
+<audio id="bg-music" src="Muse - Unintended.mp3" loop></audio>
+
+<div class="screen" id="screen">
+
+    <!-- Title first -->
+    <p id="stats-title">Who Said “I Love You” More?</p>
+
+    
+        <!-- Now Playing Widget -->
+    <div id="now-playing">
+    <img src="CD_icon.svg" alt="CD" id="cd-icon">
+    <div id="song-title">Now Playing: Muse - Unintended</div>
+    </div>
+
+    <!-- Stats hidden initially -->
+    <div id="stats" style="display: none;">
+        <div class="stat-item">You <span class="count" data-count="4940">0</span> times</div>
+        <div class="stat-item" id="me-stat">
+            Me <span class="count" data-count="5495">0</span> times
+            <!-- Crown will be added here dynamically -->
+        </div>
+    </div>
+
+</div>
+
+<script>
+const screen = document.getElementById('screen');
+const statsTitle = document.getElementById('stats-title');
+const stats = document.getElementById('stats');
+const meStat = document.getElementById('me-stat');
+const music = document.getElementById("bg-music");
+
+// --- Music fade functions ---
+function fadeIn(audio, duration = 2000) {
+    audio.volume = 0;
+    audio.play();
+    let step = 50;
+    let increment = step / duration;
+    let vol = 0;
+    const fade = setInterval(() => {
+        vol += increment;
+        if (vol >= 1) {
+            audio.volume = 1;
+            clearInterval(fade);
+        } else {
+            audio.volume = vol;
+        }
+    }, step);
+}
+
+function fadeOut(audio, duration = 2000) {
+    let step = 50;
+    let decrement = step / duration;
+    let vol = audio.volume;
+    const fade = setInterval(() => {
+        vol -= decrement;
+        if (vol <= 0) {
+            audio.volume = 0;
+            audio.pause();
+            clearInterval(fade);
+        } else {
+            audio.volume = vol;
+        }
+    }, step);
+}
+
+// --- Fade in page and music on load ---
+window.addEventListener('DOMContentLoaded', () => {
+    document.body.style.opacity = 1;
+    fadeIn(music, 2000);
+});
+
+let step = 0; // 0 = stats hidden, 1 = stats shown
+
+screen.addEventListener('click', () => {
+    if (step === 0) {
+        step = 1;
+        // Fade out title
+        statsTitle.style.transition = 'opacity 0.5s';
+        statsTitle.style.opacity = 0;
+
+        setTimeout(() => {
+            statsTitle.style.display = 'none';
+            stats.style.display = 'flex';
+
+            const statItems = document.querySelectorAll('.stat-item');
+            statItems.forEach((item, index) => {
+                setTimeout(() => {
+                    item.style.opacity = 1;
+                    item.style.transform = 'translateY(0)';
+
+                    // Count-up animation
+                    const counter = item.querySelector('.count');
+                    if (counter) {
+                        const target = +counter.getAttribute('data-count');
+                        let current = 0;
+                        const increment = target / 60;
+
+                        const interval = setInterval(() => {
+                            current += increment;
+                            if (current >= target) {
+                                current = target;
+                                clearInterval(interval);
+                            }
+                            counter.textContent = Math.floor(current);
+                        }, 16);
+                    }
+
+                    if (index === statItems.length - 1) {
+                        setTimeout(() => {
+                            launchConfetti();
+
+                            // Crown
+                            const crown = document.createElement('div');
+                            crown.classList.add('crown');
+                            crown.textContent = '👑';
+                            meStat.appendChild(crown);
+                            requestAnimationFrame(() => {
+                                crown.style.transform = 'translateX(-50%) scale(1)';
+                            });
+
+                            meStat.style.transition = 'transform 0.6s ease';
+                            meStat.style.transform = 'translateY(30px)';
+                        }, 500);
+                    }
+                }, index * 400);
+            });
+        }, 500);
+
+    } else if (step === 1) {
+        // Fade out music and page
+        fadeOut(music, 2000);
+        document.body.style.transition = 'opacity 2s ease';
+        document.body.style.opacity = 0;
+
+        // Slide up
+        screen.style.transition = 'transform 2s ease';
+        screen.style.transform = 'translateY(-100vh)';
+
+        setTimeout(() => {
+            window.location.href = 'page2.html';
+        }, 2000);
+    }
+});
+
+// --- Confetti function ---
+function launchConfetti() {
+    const colors = ['#d3f971', '#ee209c', '#4b917d', '#fff'];
+    for (let i = 0; i < 150; i++) {
+        const confetti = document.createElement('div');
+        confetti.classList.add('confetti');
+        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.left = Math.random() * window.innerWidth + 'px';
+        confetti.style.top = '-20px';
+        confetti.style.width = Math.random() * 10 + 5 + 'px';
+        confetti.style.height = confetti.style.width;
+
+        document.body.appendChild(confetti);
+
+        const fall = confetti.animate([
+            { transform: `translateY(0) rotate(${Math.random()*360}deg)` },
+            { transform: `translateY(${window.innerHeight + 50}px) rotate(${Math.random()*720}deg)` }
+        ], {
+            duration: 3000 + Math.random() * 2000,
+            iterations: 1,
+            easing: 'ease-out'
+        });
+
+        fall.onfinish = () => confetti.remove();
+    }
+}
+</script>
+
+</body>
+</html>

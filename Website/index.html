@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Relationship Wrapped</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "San Francisco", Helvetica, Arial, sans-serif;
+            background: #000;
+        }
+        .screen {
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        .intro-text {
+            color: #fff;
+            font-size: 20px;
+            text-align: center;
+            user-select: none;
+            cursor: pointer;
+        }
+        .dcard {
+            display: none; /* hidden until intro click */
+            width: 100%;
+            perspective: 1000px;
+        }
+        .card {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .buttons {
+            position: fixed;
+            bottom: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            z-index: 10;
+        }
+        .btn {
+            padding: 12px 24px;
+            background-color: #d3f971;
+            color: #000;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 16px;
+            box-shadow: 0 5px 15px rgba(211, 249, 113, 0.5);
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(211, 249, 113, 0.8);
+            background: linear-gradient(145deg, #a8e063, #d3f971);
+        }
+
+        /* --- Frame for tilting title --- */
+        .frame.center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            transform-style: preserve-3d;
+            transition: transform 0.3s ease-out;
+        }
+
+        /* --- Text styling --- */
+        p {
+            color: #fff;
+            width: 60%;
+            display: block;
+            margin: 0 auto;
+            font-size: 100px;
+            font-weight: bold;
+        }
+
+        p:nth-child(1) {
+            color: #d3f971;
+        }
+
+        p:nth-child(2) {
+            color: #4b917d;
+        }
+
+        p:nth-child(3) {
+            color: #fff;
+        }
+
+        p:nth-child(4) {
+            color: #ee209c;
+        }
+
+        p.underline {
+            font-size: 28px;
+            text-align: center;
+            margin-top: 50px;
+            color: #d3f971;
+        }
+
+        #now-playing {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 6px 12px;
+            border-radius: 20px;
+            color: #fff;
+            font-weight: bold;
+            font-family: 'Montserrat', sans-serif;
+            z-index: 100; /* above everything else */
+        }
+
+        #cd-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            animation: spin 3s linear infinite;
+        }
+
+        /* Spin animation for CD */
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        #song-title {
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+
+    </style>
+</head>
+<body>
+
+<audio id="bg-music" src="Muse - Madness.mp3" loop></audio>
+
+
+<div class="screen" id="screen">
+    <!-- Intro screen -->
+    <div class="intro-text" id="intro-text">Click here to start...</div>
+
+    <!-- Main content -->
+    <div class="dcard" id="main-card">
+        <div class="card">
+
+            <!-- Now Playing Widget -->
+        <div id="now-playing">
+            <img src="CD_icon.svg" alt="CD" id="cd-icon">
+            <div id="song-title">Now Playing: Muse - Madness</div>
+        </div>
+
+            <!-- Continue button -->
+            <div class="buttons">
+                <a href="page1.html" class="btn" id="continue-btn">CONTINUE!!!</a>
+            </div>
+            
+            <!-- Title frame (all Ps tilt together) -->
+            <div class="frame center" id="title-frame">
+                <p>Welcome to the</p>
+                <p>start of the year.</p>
+                <p>Ready for your</p>
+                <p>Relationship Wrapped?</p>
+                <p class="underline">Discover who truly loves each other more (I do).</p>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+<script>
+const music = document.getElementById("bg-music");
+const introText = document.getElementById("intro-text");
+const mainCard = document.getElementById("main-card");
+const continueButton = document.getElementById("continue-btn");
+const titleFrame = document.getElementById("title-frame");
+
+// Music fade in
+function fadeIn(audio, duration = 2000) {
+    audio.volume = 0;
+    audio.play();
+    let step = 50;
+    let increment = step / duration;
+    let vol = 0;
+    const fade = setInterval(() => {
+        vol += increment;
+        if (vol >= 1) {
+            audio.volume = 1;
+            clearInterval(fade);
+        } else {
+            audio.volume = vol;
+        }
+    }, step);
+}
+
+// Music fade out
+function fadeOut(audio, duration = 2000, callback) {
+    let step = 50;
+    let decrement = step / duration;
+    let vol = audio.volume;
+    const fade = setInterval(() => {
+        vol -= decrement;
+        if (vol <= 0) {
+            audio.volume = 0;
+            audio.pause();
+            clearInterval(fade);
+            if (callback) callback();
+        } else {
+            audio.volume = vol;
+        }
+    }, step);
+}
+
+// Start intro
+introText.addEventListener('click', () => {
+    introText.style.display = 'none';
+    mainCard.style.display = 'block';
+    fadeIn(music, 2000);
+});
+
+// Continue button: fade out music and page
+continueButton.addEventListener('click', function(e) {
+    e.preventDefault();
+    const nextPage = this.href;
+    fadeOut(music, 2000);
+    document.body.style.transition = 'opacity 2s ease, transform 2s ease';
+    document.body.style.opacity = 0;
+    document.body.style.transform = 'translateY(-50px)';
+    setTimeout(() => { window.location.href = nextPage; }, 2000);
+});
+
+// Tilt effect applied to entire title frame
+mainCard.addEventListener('mousemove', (e) => {
+    const rect = titleFrame.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const rotateX = ((y - centerY) / centerY) * 10;
+    const rotateY = ((x - centerX) / centerX) * 10;
+    titleFrame.style.transform = `translate(-50%, -50%) rotateX(${-rotateX}deg) rotateY(${rotateY}deg)`;
+});
+
+mainCard.addEventListener('mouseleave', () => {
+    titleFrame.style.transform = 'translate(-50%, -50%) rotateX(0deg) rotateY(0deg)';
+});
+</script>
+
+</body>
+</html>
